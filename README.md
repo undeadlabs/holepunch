@@ -1,4 +1,5 @@
 # holepunch
+[![Build Status](https://travis-ci.org/undeadlabs/holepunch.svg?branch=master)](https://travis-ci.org/undeadlabs/holepunch)
 
 Holepunch manages AWS EC2 security groups in a declarative way through a DSL.
 
