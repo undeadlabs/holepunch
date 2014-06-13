@@ -23,7 +23,7 @@ gem 'holepunch'
 ## Basic Configuration
 
 You need to provide your AWS security credentials and a region. These can be
-provided as the command-line options, or you can use the standard AWS
+provided via the command-line options, or you can use the standard AWS
 environment variables:
 
 ```bash
