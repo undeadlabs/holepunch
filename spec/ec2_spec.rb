@@ -21,7 +21,7 @@
 require 'spec_helper'
 include HolePunch
 
-describe HolePunch::EC2 do
+describe HolePunch::EC2, integration: true do
   let(:ec2)    { EC2.new }
   let(:region) { ec2.region }
 

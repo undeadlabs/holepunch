@@ -60,4 +60,6 @@ end
 
 RSpec.configure do |config|
   config.include Spec::Helpers
+
+  config.filter_run_excluding integration: true
 end

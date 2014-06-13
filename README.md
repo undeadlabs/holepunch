@@ -99,6 +99,20 @@ If you need to specify an environment:
 $ holepunch -e live
 ```
 
+## Testing
+
+You can run the unit tests by simply running rspec.
+
+```
+$ rspec
+```
+
+By default the integration tests with EC2 are not run. You may run them with:
+
+```
+$ rspec -t integration
+```
+
 ## Authors
 
 - Ben Scott (gamepoet@gmail.com)
