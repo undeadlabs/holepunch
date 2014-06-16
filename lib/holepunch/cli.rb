@@ -83,7 +83,7 @@ module HolePunch
           parser.on('-K', '--aws-secret-access-key SECRET', String, 'Your AWS API Secret Access Key') do |value|
             opts.aws_secret_access_key = value
           end
-          parser.on('-r', '--region REGION', String, 'Your AWS region') do |v|
+          parser.on('-r', '--aws-region REGION', String, 'Your AWS region') do |v|
             opts.aws_region = v
           end
           parser.on('-v', '--verbose', 'verbose output') do |v|
