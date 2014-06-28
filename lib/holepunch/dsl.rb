@@ -21,104 +21,104 @@
 require 'pathname'
 
 module HolePunch
-  class ServiceDSL
-    def self.evaluate(id, &block)
-      new(id).eval_dsl(&block)
+  class BaseDSL
+    def initialize(env, model)
+      @env = env
+      @model = model
     end
 
-    def initialize(id)
-      @service = Service.new(id)
-    end
-
-    def eval_dsl(&block)
-      instance_eval(&block) if block_given?
-      @service
-    end
-
-    def groups(*ids)
-      @service.groups.concat(ids.flatten)
-    end
-  end
-
-  class DSL
-    attr_reader :groups
-
-    def self.evaluate(filename, env = nil)
-      DSL.new(env).eval_dsl(filename)
-    end
-
-    def initialize(env)
-      @definition = Definition.new(env)
-      @group = nil
-      @groups = {}
-    end
-
-    def eval_dsl(filename)
-      instance_eval(HolePunch.read_file(filename.to_s), filename.to_s, 1)
-      @definition.validate!
-      @definition
-    rescue SyntaxError => e
-      raise SecurityGroupsFileError, "SecurityGroups syntax error #{e.message.gsub("#{filename.to_s}:", 'on line ')}"
+    def eval_dsl(filename = nil, &block)
+      if !filename.nil?
+        instance_eval(HolePunch.read_file(filename.to_s), filename.to_s, 1)
+      else
+        instance_eval(&block) if block_given?
+      end
+      @model
     end
 
     def env
-      raise EnvNotDefinedError, 'env not defined' if @definition.env.nil?
-      @definition.env
+      raise EnvNotDefinedError, 'env not defined' if @env.nil?
+      @env
+    end
+  end
+
+  class ServiceDSL < BaseDSL
+    def self.evaluate(env, *args, &block)
+      new(env, *args).eval_dsl(&block)
     end
 
-    def depends(id)
-      id = id.to_s
-      raise GroupError, "duplicate group id #{id}" if @definition.groups.include?(id)
-      raise HolePunchSyntaxError, "dependency group #{id} cannot have a block" if block_given?
-      @group            = SecurityGroup.new(id, dependency: true)
-      @definition.add_group(@group)
-      yield if block_given?
-    ensure
-      @group = nil
+    def initialize(env, id)
+      super(env, Service.new(id))
     end
 
-    def group(id, &block)
-      id = id.to_s
-      raise GroupError, "duplicate group id #{id}" if @definition.groups.include?(id)
-      @group            = SecurityGroup.new(id, dependency: false)
-      @definition.add_group(@group)
-      yield if block_given?
-    ensure
-      @group = nil
+    def groups(*ids)
+      @model.groups.concat(ids.flatten)
+    end
+  end
+
+  class GroupDSL < BaseDSL
+    def self.evaluate(env, *args, &block)
+      new(env, *args).eval_dsl(&block)
+    end
+
+    def initialize(env, id)
+      super(env, SecurityGroup.new(id, dependency: false))
     end
 
     def desc(str)
-      raise HolePunchSyntaxError, 'desc must be used inside a group' if @group.nil?
-      raise HolePunchSyntaxError, 'desc cannot be used in a dependency group (the group is expected to be already defined elsewhere)' if @group.dependency
-      @group.desc = str
+      @model.desc = str
     end
 
     def icmp(*sources)
-      raise HolePunchSyntaxError, 'ping/icmp must be used inside a group' if @group.nil?
-      raise HolePunchSyntaxError, 'ping/icmp cannot be used in a dependency group (the group is expected to be already defined elsewhere)' if @group.dependency
       sources << '0.0.0.0/0' if sources.empty?
-      @group.ingresses << Permission.new(:icmp, nil, sources.flatten)
+      @model.ingresses << Permission.new(:icmp, nil, sources.flatten)
     end
     alias_method :ping, :icmp
 
     def tcp(ports, *sources)
-      raise HolePunchSyntaxError, 'tcp must be used inside a group' if @group.nil?
-      raise HolePunchSyntaxError, 'tcp cannot be used in a dependency group (the group is expected to be already defined elsewhere)' if @group.dependency
       sources << '0.0.0.0/0' if sources.empty?
-      @group.ingresses << Permission.new(:tcp, ports, sources.flatten)
+      @model.ingresses << Permission.new(:tcp, ports, sources.flatten)
     end
 
     def udp(ports, *sources)
-      raise HolePunchSyntaxError, 'udp must be used inside a group' if @group.nil?
-      raise HolePunchSyntaxError, 'udp cannot be used in a dependency group (the group is expected to be already defined elsewhere)' if @group.dependency
       sources << '0.0.0.0/0' if sources.empty?
-      @group.ingresses << Permission.new(:udp, ports, sources.flatten)
+      @model.ingresses << Permission.new(:udp, ports, sources.flatten)
+    end
+  end
+
+  class DSL < BaseDSL
+    def self.evaluate(filename, env)
+      DSL.new(env).eval_dsl(filename)
+    end
+
+    def initialize(env)
+      super(env, Definition.new(env))
+    end
+
+    def eval_dsl(filename)
+      super(filename)
+      @model.validate!
+      @model
+    rescue SyntaxError => e
+      raise SecurityGroupsFileError, "SecurityGroups syntax error #{e.message.gsub("#{filename.to_s}:", 'on line ')}"
+    end
+
+    def depends(id)
+      id = id.to_s
+      raise GroupError, "duplicate group id #{id}" if @model.groups.include?(id)
+      raise HolePunchSyntaxError, "dependency group #{id} cannot have a block" if block_given?
+      @model.add_group(SecurityGroup.new(id, dependency: true))
+    end
+
+    def group(id, &block)
+      id = id.to_s
+      raise GroupError, "duplicate group id #{id}" if @model.groups.include?(id)
+      @model.add_group(GroupDSL.evaluate(@env, id, &block))
     end
 
     def service(id, &block)
       id = id.to_s
-      raise HolePunchSyntaxError, 'service cannot be used inside a group' unless @group.nil?
-      @definition.services[id] = ServiceDSL.evaluate(id, &block)
+      @model.services[id] = ServiceDSL.evaluate(@env, id, &block)
     end
   end
 end

@@ -35,9 +35,15 @@ module Spec
       end
     end
 
-    def dsl_eval(content)
+    def dsl_eval(content_or_env, content = nil)
+      if content.nil?
+        content = content_or_env
+        env = nil
+      else
+        env = content_or_env
+      end
       set_security_groups_content(content)
-      DSL.evaluate('SecurityGroups')
+      DSL.evaluate('SecurityGroups', env)
     end
 
     def set_security_groups_content(content)

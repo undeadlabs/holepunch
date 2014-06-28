@@ -280,5 +280,21 @@ describe ::HolePunch::DSL do
 
       expect(dsl.services['app'].groups).to match_array(%w(admin http db))
     end
+
+    it 'supports env in the service name' do
+      dsl = dsl_eval 'dev', <<-'EOS'
+        service "#{env}-app"
+      EOS
+      expect(dsl.services.keys).to match_array(%w(dev-app))
+    end
+
+    it 'supports env for service groups' do
+      dsl = dsl_eval 'dev', <<-'EOS'
+        service :app do
+          groups ["#{env}-admin"]
+        end
+      EOS
+      expect(dsl.services['app'].groups).to match_array(%w(dev-admin))
+    end
   end
 end
