@@ -19,6 +19,15 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 module HolePunch
+  class Service
+    attr_accessor :id, :groups
+
+    def initialize(id)
+      @id = id
+      @groups = []
+    end
+  end
+
   class SecurityGroup
     attr_accessor :id, :desc, :dependency, :ingresses
 
@@ -59,6 +68,7 @@ module HolePunch
   class Definition
     attr_reader :env
     attr_reader :groups
+    attr_reader :services
 
     class << self
       def build(file, env)
@@ -74,6 +84,7 @@ module HolePunch
     def initialize(env = nil)
       @env = env
       @groups = {}
+      @services = {}
     end
 
     def add_group(group)

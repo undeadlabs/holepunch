@@ -244,5 +244,41 @@ describe ::HolePunch::DSL do
         EOS
       }.to raise_error(GroupError)
     end
+
+    it 'parses an empty service definition' do
+      dsl = dsl_eval <<-EOS
+        service 'app'
+      EOS
+
+      expect(dsl.services.keys).to match_array(['app'])
+    end
+
+    it 'parses an empty service definition with a symbol name' do
+      dsl = dsl_eval <<-EOS
+        service :app
+      EOS
+
+      expect(dsl.services.keys).to match_array(['app'])
+    end
+
+    it 'parses a single group for a service' do
+      dsl = dsl_eval <<-EOS
+        service :app do
+          groups 'admin'
+        end
+      EOS
+
+      expect(dsl.services['app'].groups).to match_array(['admin'])
+    end
+
+    it 'parses a list of groups for a service' do
+      dsl = dsl_eval <<-EOS
+        service :app do
+          groups 'admin', ['http', 'db']
+        end
+      EOS
+
+      expect(dsl.services['app'].groups).to match_array(%w(admin http db))
+    end
   end
 end

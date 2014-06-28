@@ -21,6 +21,25 @@
 require 'pathname'
 
 module HolePunch
+  class ServiceDSL
+    def self.evaluate(id, &block)
+      new(id).eval_dsl(&block)
+    end
+
+    def initialize(id)
+      @service = Service.new(id)
+    end
+
+    def eval_dsl(&block)
+      instance_eval(&block) if block_given?
+      @service
+    end
+
+    def groups(*ids)
+      @service.groups.concat(ids.flatten)
+    end
+  end
+
   class DSL
     attr_reader :groups
 
@@ -94,6 +113,12 @@ module HolePunch
       raise HolePunchSyntaxError, 'udp cannot be used in a dependency group (the group is expected to be already defined elsewhere)' if @group.dependency
       sources << '0.0.0.0/0' if sources.empty?
       @group.ingresses << Permission.new(:udp, ports, sources.flatten)
+    end
+
+    def service(id, &block)
+      id = id.to_s
+      raise HolePunchSyntaxError, 'service cannot be used inside a group' unless @group.nil?
+      @definition.services[id] = ServiceDSL.evaluate(id, &block)
     end
   end
 end
