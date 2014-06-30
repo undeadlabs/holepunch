@@ -124,7 +124,7 @@ $ holepunch -e live
 You can get a list of security groups for a service using the `service` subcommand.
 
 ```
-$ holepunch service prod-web
+$ holepunch service -e prod prod-web
 admin,prod-log-producer,prod-web
 ```
 
