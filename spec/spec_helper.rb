@@ -42,11 +42,12 @@ module Spec
       else
         env = content_or_env
       end
-      set_security_groups_content(content)
+      set_security_groups_content('SecurityGroups', content)
       DSL.evaluate('SecurityGroups', env)
     end
 
-    def set_security_groups_content(content)
+    def set_security_groups_content(filename, content)
+      allow_any_instance_of(Pathname).to receive(:file?).and_return(true)
       allow(HolePunch).to receive(:read_file).and_return(content)
     end
 

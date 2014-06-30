@@ -33,8 +33,28 @@ module HolePunch
   class GroupDoesNotExistError < HolePunchError; end
   class SecurityGroupsFileNotFoundError < HolePunchError; end
   class SecurityGroupsFileError < HolePunchError; end
+  class ServiceDoesNotExistError < HolePunchError; end
 
   class << self
+    # Examines the given SecurityGroups file for the given service and returns
+    # a list of the security groups that make up that service.
+    #
+    # @param filename [String]      the path to the SecurityGroups file
+    # @param env      [String, nil] the environment
+    # @param name     [String]      the name of the service to query
+    #
+    # @return [Array<String>] the list of security group names
+    def service_groups(filename, env, name)
+      definition = Definition.build(filename, env)
+      service = definition.services[name]
+      raise ServiceDoesNotExistError, "service '#{name}' not found" if service.nil?
+      service.groups
+    end
+
+    #
+    # private helpers
+    #
+
     def cidr?(value)
       value.to_s =~ /\d+\.\d+\.\d+\.\d+\/\d+/
     end
