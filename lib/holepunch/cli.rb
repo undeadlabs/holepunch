@@ -97,7 +97,7 @@ module HolePunch
     def version
       puts VERSION
     end
-    map %w(-v --version) => :version
+    map %w(-V --version) => :version
 
     protected
       def exit_on_failure?
