@@ -46,7 +46,7 @@ module HolePunch
     def apply
       Logger.fatal("AWS Access Key ID not defined. Use --aws-access-key or AWS_ACCESS_KEY_ID") if options[:'aws-access-key'].nil?
       Logger.fatal("AWS Secret Access Key not defined. Use --aws-secret-access-key or AWS_SECRET_ACCESS_KEY") if options[:'aws-secret-access-key'].nil?
-      Logger.fatal("AWS Region not defined. Use --aws-region or AWS_REGION") if opts[:'aws-region'].nil?
+      Logger.fatal("AWS Region not defined. Use --aws-region or AWS_REGION") if options[:'aws-region'].nil?
       Logger.verbose = options[:verbose]
 
       definition = Definition.build(options[:file], options[:env])
