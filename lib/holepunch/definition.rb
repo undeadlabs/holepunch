@@ -104,6 +104,15 @@ module HolePunch
           end
         end
       end
+
+      # verify service group references are defined
+      services.each do |name, service|
+        service.groups.each do |group|
+          unless groups.include?(group)
+            raise GroupDoesNotExistError, "group '#{group}' referenced by service '#{name}' does not exist"
+          end
+        end
+      end
     end
   end
 end

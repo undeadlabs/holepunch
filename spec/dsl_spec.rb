@@ -263,6 +263,7 @@ describe ::HolePunch::DSL do
 
     it 'parses a single group for a service' do
       dsl = dsl_eval <<-EOS
+        depends 'admin'
         service :app do
           groups 'admin'
         end
@@ -273,6 +274,9 @@ describe ::HolePunch::DSL do
 
     it 'parses a list of groups for a service' do
       dsl = dsl_eval <<-EOS
+        depends 'admin'
+        depends 'db'
+        depends 'http'
         service :app do
           groups 'admin', ['http', 'db']
         end
@@ -290,11 +294,22 @@ describe ::HolePunch::DSL do
 
     it 'supports env for service groups' do
       dsl = dsl_eval 'dev', <<-'EOS'
+        depends "#{env}-admin"
         service :app do
           groups ["#{env}-admin"]
         end
       EOS
       expect(dsl.services['app'].groups).to match_array(%w(dev-admin))
+    end
+
+    it 'fails if a service references undefined groups' do
+      expect do
+        dsl_eval <<-EOS
+          service :app do
+            groups 'does-not-exist'
+          end
+        EOS
+      end.to raise_error(GroupDoesNotExistError)
     end
   end
 end
