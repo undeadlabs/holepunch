@@ -28,6 +28,8 @@ module HolePunch
       Logger.output = LoggerOutputStdio.new
     end
 
+    default_task :apply
+
     option :'aws-access-key',         aliases: :A, type: :string, default: ENV['AWS_ACCESS_KEY_ID'], desc:
       'Your AWS Access Key ID'
     option :'aws-secret-access-key',  aliases: :k, type: :string, default: ENV['AWS_SECRET_ACCESS_KEY'], desc:
