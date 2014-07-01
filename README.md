@@ -93,6 +93,7 @@ You can specify ping/icmp rules with `icmp` (alias: `ping`).
 group 'my-service' do
   ping '10.0.0.0/16'
 end
+```
 
 It can be useful to describe groups of security groups you plan to launch
 instances with by using the `service` declaration.
