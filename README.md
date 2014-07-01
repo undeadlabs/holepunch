@@ -63,9 +63,9 @@ An environment can be specified which is available through the `env` variable.
 This allows you to have custom security groups per server environment.
 
 ```ruby
-group "web-#{env}"
-group "db-#{env}" do
-  tcp 5432, "web-#{env}"
+group "#{env}-web"
+group "#{env}-db" do
+  tcp 5432, "#{env}-web"
 end
 ```
 
@@ -87,6 +87,26 @@ group 'my-service' do
 end
 ```
 
+You can specify ping/icmp rules with `icmp` (alias: `ping`).
+
+```ruby
+group 'my-service' do
+  ping '10.0.0.0/16'
+end
+
+It can be useful to describe groups of security groups you plan to launch
+instances with by using the `service` declaration.
+
+```ruby
+service "#{env}-web" do
+  groups %W(
+    admin
+    #{env}-log-producer
+    #{env}-web
+  )
+end
+```
+
 ## Usage
 
 Simply navigate to the directory containing your `SecurityGroups` file and run `holepunch`.
@@ -99,6 +119,19 @@ If you need to specify an environment:
 
 ```
 $ holepunch -e live
+```
+
+You can get a list of security groups for a service using the `service` subcommand.
+
+```
+$ holepunch service -e prod prod-web
+admin,prod-log-producer,prod-web
+```
+
+You can also get a list of all defined services.
+
+```
+$ holepunch service --list
 ```
 
 ## Testing

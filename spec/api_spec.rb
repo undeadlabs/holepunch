@@ -1,4 +1,3 @@
-#!/usr/bin/env ruby
 #
 # Copyright (C) 2014 Undead Labs, LLC
 #
@@ -19,8 +18,37 @@
 # IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
-lib = File.expand_path('../../lib', __FILE__)
-$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require 'holepunch/cli'
+require 'spec_helper'
 
-HolePunch::CLI.start(ARGV.dup)
+include HolePunch
+
+describe HolePunch do
+  describe '#service_groups' do
+    it 'raises if the file does not exist' do
+      expect do
+        HolePunch.service_groups('does-not-exist', nil, 'web')
+      end.to raise_error(SecurityGroupsFileNotFoundError)
+    end
+
+    it 'raises if the service is not defined' do
+      set_security_groups_content 'SecurityGroups', <<-EOS
+      EOS
+      expect do
+        HolePunch.service_groups('SecurityGroups', nil, 'web')
+      end.to raise_error(ServiceDoesNotExistError)
+    end
+
+    it 'properly returns the list of groups for the service' do
+      set_security_groups_content 'SecurityGroups', <<-'EOS'
+        group 'admin'
+        group "#{env}-web"
+        service 'web' do
+          groups 'admin', "#{env}-web"
+        end
+      EOS
+      groups = HolePunch.service_groups('SecurityGroups', 'prod', 'web')
+
+      expect(groups).to match_array(['admin', 'prod-web'])
+    end
+  end
+end

@@ -35,12 +35,19 @@ module Spec
       end
     end
 
-    def dsl_eval(content)
-      set_security_groups_content(content)
-      DSL.evaluate('SecurityGroups')
+    def dsl_eval(content_or_env, content = nil)
+      if content.nil?
+        content = content_or_env
+        env = nil
+      else
+        env = content_or_env
+      end
+      set_security_groups_content('SecurityGroups', content)
+      DSL.evaluate('SecurityGroups', env)
     end
 
-    def set_security_groups_content(content)
+    def set_security_groups_content(filename, content)
+      allow_any_instance_of(Pathname).to receive(:file?).and_return(true)
       allow(HolePunch).to receive(:read_file).and_return(content)
     end
 

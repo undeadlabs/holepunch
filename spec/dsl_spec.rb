@@ -244,5 +244,72 @@ describe ::HolePunch::DSL do
         EOS
       }.to raise_error(GroupError)
     end
+
+    it 'parses an empty service definition' do
+      dsl = dsl_eval <<-EOS
+        service 'app'
+      EOS
+
+      expect(dsl.services.keys).to match_array(['app'])
+    end
+
+    it 'parses an empty service definition with a symbol name' do
+      dsl = dsl_eval <<-EOS
+        service :app
+      EOS
+
+      expect(dsl.services.keys).to match_array(['app'])
+    end
+
+    it 'parses a single group for a service' do
+      dsl = dsl_eval <<-EOS
+        depends 'admin'
+        service :app do
+          groups 'admin'
+        end
+      EOS
+
+      expect(dsl.services['app'].groups).to match_array(['admin'])
+    end
+
+    it 'parses a list of groups for a service' do
+      dsl = dsl_eval <<-EOS
+        depends 'admin'
+        depends 'db'
+        depends 'http'
+        service :app do
+          groups 'admin', ['http', 'db']
+        end
+      EOS
+
+      expect(dsl.services['app'].groups).to match_array(%w(admin http db))
+    end
+
+    it 'supports env in the service name' do
+      dsl = dsl_eval 'dev', <<-'EOS'
+        service "#{env}-app"
+      EOS
+      expect(dsl.services.keys).to match_array(%w(dev-app))
+    end
+
+    it 'supports env for service groups' do
+      dsl = dsl_eval 'dev', <<-'EOS'
+        depends "#{env}-admin"
+        service :app do
+          groups ["#{env}-admin"]
+        end
+      EOS
+      expect(dsl.services['app'].groups).to match_array(%w(dev-admin))
+    end
+
+    it 'fails if a service references undefined groups' do
+      expect do
+        dsl_eval <<-EOS
+          service :app do
+            groups 'does-not-exist'
+          end
+        EOS
+      end.to raise_error(GroupDoesNotExistError)
+    end
   end
 end

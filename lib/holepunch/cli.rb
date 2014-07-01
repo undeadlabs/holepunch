@@ -19,33 +19,41 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 require 'holepunch'
-require 'optparse'
+require 'thor'
 
 module HolePunch
-  class Options < Struct.new(
-    :aws_access_key_id,
-    :aws_region,
-    :aws_secret_access_key,
-    :env,
-    :filename,
-    :verbose
-  ); end
-
-  class Cli
-    def initialize
+  class CLI < Thor
+    def initialize(*args)
+      super
       Logger.output = LoggerOutputStdio.new
     end
 
-    def execute!(args)
-      opts = parse_opts(args)
-      Logger.verbose = opts.verbose
+    default_task :apply
 
-      definition = Definition.build(opts.filename, opts.env)
+    option :'aws-access-key',         aliases: :A, type: :string, default: ENV['AWS_ACCESS_KEY_ID'], desc:
+      'Your AWS Access Key ID'
+    option :'aws-secret-access-key',  aliases: :k, type: :string, default: ENV['AWS_SECRET_ACCESS_KEY'], desc:
+      'Your AWS API Secret Access Key'
+    option :'aws-region',             aliases: :r, type: :string, default: ENV['AWS_REGION'], desc:
+      'Your AWS region'
+    option :env,                      aliases: :e, type: :string, desc:
+      'Set the environment'
+    option :file,                     aliases: :f, type: :string, default: "#{Dir.pwd}/SecurityGroups", desc:
+      'The location of the SecurityGroups file to use'
+    option :verbose,                  aliases: :v, type: :boolean, desc:
+      'Enable verbose output'
+    desc 'apply [OPTIONS]', 'apply the defined security groups to ec2'
+    def apply
+      Logger.fatal("AWS Access Key ID not defined. Use --aws-access-key or AWS_ACCESS_KEY_ID") if options[:'aws-access-key'].nil?
+      Logger.fatal("AWS Secret Access Key not defined. Use --aws-secret-access-key or AWS_SECRET_ACCESS_KEY") if options[:'aws-secret-access-key'].nil?
+      Logger.fatal("AWS Region not defined. Use --aws-region or AWS_REGION") if options[:'aws-region'].nil?
+      Logger.verbose = options[:verbose]
 
+      definition = Definition.build(options[:file], options[:env])
       ec2 = EC2.new({
-        access_key_id:     opts.aws_access_key_id,
-        secret_access_key: opts.aws_secret_access_key,
-        region:            opts.aws_region,
+        access_key_id:     options[:'aws-access-key'],
+        secret_access_key: options[:'aws-secret-access-key'],
+        region:            options[:'aws-region'],
       })
       ec2.apply(definition)
 
@@ -55,55 +63,45 @@ module HolePunch
       Logger.fatal(e.message)
     end
 
-    private
-      def parse_opts(args)
-        opts                       = Options.new
-        opts.aws_access_key_id     = ENV['AWS_ACCESS_KEY_ID']
-        opts.aws_secret_access_key = ENV['AWS_SECRET_ACCESS_KEY']
-        opts.aws_region            = ENV['AWS_REGION']
-        opts.env                   = nil
-        opts.filename              = "#{Dir.pwd}/SecurityGroups"
-        opts.verbose               = false
+    option :env,                      aliases: :e, type: :string, desc:
+      'Set the environment'
+    option :file,                     aliases: :f, type: :string, default: "#{Dir.pwd}/SecurityGroups", desc:
+      'The location of the SecurityGroups file to use'
+    option :list,                                  type: :boolean, desc:
+      'List all services instead'
+    option :verbose,                  aliases: :v, type: :boolean, desc:
+      'Enable verbose output'
+    desc 'service NAME', 'output the list of security groups for a service'
+    def service(name = nil)
+      Logger.verbose = options[:verbose]
 
-        OptionParser.new(<<-EOS.gsub(/^ {10}/, '')
-          Usage: holepunch [options]
+      definition = Definition.build(options[:file], options[:env])
 
-          Options:
-        EOS
-        ) do |parser|
-          parser.on('-A', '--aws-access-key KEY', String, 'Your AWS Access Key ID') do |value|
-            opts.aws_access_key_id = value
-          end
-          parser.on('-e', '--env ENV', String, 'Set the environment') do |value|
-            opts.env = value
-          end
-          parser.on('-f', '--file FILENAME', String, 'The location of the SecurityGroups file to use') do |value|
-            opts.filename = value
-          end
-          parser.on('-K', '--aws-secret-access-key SECRET', String, 'Your AWS API Secret Access Key') do |value|
-            opts.aws_secret_access_key = value
-          end
-          parser.on('-r', '--aws-region REGION', String, 'Your AWS region') do |v|
-            opts.aws_region = v
-          end
-          parser.on('-v', '--verbose', 'verbose output') do |v|
-            opts.verbose = v
-          end
-          parser.on('-V', '--version', 'display the version and exit') do
-            puts VERSION
-            exit
-          end
-          parser.on_tail('-h', '--help', 'show this message') do
-            puts parser
-            exit
-          end
-        end.parse!(args)
+      if options[:list]
+        definition.services.keys.sort.each do |name|
+          puts name
+        end
+      else
+        service = definition.services[name]
+        Logger.fatal("service '#{name}' not found") if service.nil?
+        puts service.groups.sort.join(',')
+      end
 
-        Logger.fatal("AWS Access Key ID not defined. Use --aws-access-key or AWS_ACCESS_KEY_ID") if opts.aws_access_key_id.nil?
-        Logger.fatal("AWS Secret Access Key not defined. Use --aws-secret-access-key or AWS_SECRET_ACCESS_KEY") if opts.aws_secret_access_key.nil?
-        Logger.fatal("AWS Region not defined. Use --aws-region or AWS_REGION") if opts.aws_region.nil?
+    rescue EnvNotDefinedError => e
+      Logger.fatal('You have security groups that use an environment, but you did not specify one. See --help')
+    rescue HolePunchError => e
+      Logger.fatal(e.message)
+    end
 
-        opts
+    desc 'version', 'display the version and exit'
+    def version
+      puts VERSION
+    end
+    map %w(-V --version) => :version
+
+    protected
+      def exit_on_failure?
+        true
       end
   end
 end
