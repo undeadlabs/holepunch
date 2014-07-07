@@ -49,14 +49,11 @@ module HolePunch
       Logger.fatal("AWS Region not defined. Use --aws-region or AWS_REGION") if options[:'aws-region'].nil?
       Logger.verbose = options[:verbose]
 
-      definition = Definition.build(options[:file], options[:env])
-      ec2 = EC2.new({
-        access_key_id:     options[:'aws-access-key'],
-        secret_access_key: options[:'aws-secret-access-key'],
-        region:            options[:'aws-region'],
+      HolePunch.apply(options[:file], options[:env], {
+        aws_access_key_id:     options[:'aws-access-key'],
+        aws_secret_access_key: options[:'aws-secret-access-key'],
+        aws_region:            options[:'aws-region'],
       })
-      ec2.apply(definition)
-
     rescue EnvNotDefinedError => e
       Logger.fatal('You have security groups that use an environment, but you did not specify one. See --help')
     rescue HolePunchError => e

@@ -36,6 +36,25 @@ module HolePunch
   class ServiceDoesNotExistError < HolePunchError; end
 
   class << self
+    # Applies the given SecurityGroups file to EC2.
+    #
+    # @param filename [String]      the path to the SecurityGroups file
+    # @param env      [String, nil] the environment
+    # @param opts     [Hash]        additional options
+    #
+    # @option opts [String] :aws_access_key_id      the AWS access key id
+    # @option opts [String] :aws_secret_access_key  the AWS secret access key
+    # @option opts [String] :aws_region             the AWS region
+    def apply(filename, env, opts = {})
+      definition = Definition.build(filename, env)
+      ec2 = EC2.new({
+        access_key_id:     opts[:aws_access_key_id],
+        secret_access_key: opts[:aws_secret_access_key],
+        region:            opts[:aws_region],
+      })
+      ec2.apply(definition)
+    end
+
     # Examines the given SecurityGroups file for the given service and returns
     # a list of the security groups that make up that service.
     #
