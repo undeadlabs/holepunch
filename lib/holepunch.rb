@@ -64,6 +64,19 @@ module HolePunch
       end
     end
 
+    # Checks a list of security groups against the SecurityGroups file and
+    # returns an array of the groups that are undefined.
+    #
+    # @param filename [String]        the path to the SecurityGroups file
+    # @param env      [String, nil]   the environment
+    # @param groups   [Array<String>] the list of security groups to check
+    def select_undefined(filename, env, groups)
+      definition = Definition.build(filename, env)
+      groups.reject do |group_id|
+        definition.groups.include?(group_id)
+      end
+    end
+
     # Examines the given SecurityGroups file for the given service and returns
     # a list of the security groups that make up that service.
     #
