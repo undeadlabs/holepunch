@@ -47,11 +47,7 @@ module HolePunch
     # @option opts [String] :aws_region             the AWS region
     def apply(filename, env, opts = {})
       definition = Definition.build(filename, env)
-      ec2 = EC2.new({
-        access_key_id:     opts[:aws_access_key_id],
-        secret_access_key: opts[:aws_secret_access_key],
-        region:            opts[:aws_region],
-      })
+      ec2 = EC2.new(opts)
       ec2.apply(definition)
     end
 
