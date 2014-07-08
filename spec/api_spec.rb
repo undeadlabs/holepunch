@@ -51,4 +51,72 @@ describe HolePunch do
       expect(groups).to match_array(['admin', 'prod-web'])
     end
   end
+
+  describe '#defined?' do
+    it 'raises if the file does not exist' do
+      expect do
+        HolePunch.defined?('does-not-exist', nil, %w(web))
+      end.to raise_error(SecurityGroupsFileNotFoundError)
+    end
+
+    it 'returns true if given an empty list' do
+      set_security_groups_content 'SecurityGroups', <<-EOS
+        group 'admin'
+      EOS
+
+      expect(HolePunch.defined?('SecurityGroups', nil, [])).to be
+    end
+
+    it 'returns true if all groups are defined' do
+      set_security_groups_content 'SecurityGroups', <<-EOS
+        group 'admin'
+        group 'web'
+      EOS
+
+      expect(HolePunch.defined?('SecurityGroups', nil, %w(admin web))).to be
+    end
+
+    it 'returns false if any group is not defined' do
+      set_security_groups_content 'SecurityGroups', <<-EOS
+        group 'admin'
+        group 'web'
+      EOS
+
+      expect(HolePunch.defined?('SecurityGroups', nil, %w(admin web does-not-exist))).not_to be
+    end
+  end
+
+  describe '#select_undefined' do
+    it 'raises if the file does not exist' do
+      expect do
+        HolePunch.select_undefined('does-not-exist', nil, %w(web))
+      end.to raise_error(SecurityGroupsFileNotFoundError)
+    end
+
+    it 'returns an empty list if given an empty list' do
+      set_security_groups_content 'SecurityGroups', <<-EOS
+        group 'admin'
+      EOS
+
+      expect(HolePunch.select_undefined('SecurityGroups', nil, [])).to eq([])
+    end
+
+    it 'returns an empty list if all groups are defined' do
+      set_security_groups_content 'SecurityGroups', <<-EOS
+        group 'admin'
+        group 'web'
+      EOS
+
+      expect(HolePunch.select_undefined('SecurityGroups', nil, %w(admin web))).to eq([])
+    end
+
+    it 'returns the missing groups if any group is not defined' do
+      set_security_groups_content 'SecurityGroups', <<-EOS
+        group 'admin'
+        group 'web'
+      EOS
+
+      expect(HolePunch.select_undefined('SecurityGroups', nil, %w(missing admin web does-not-exist))).to match_array(%w(does-not-exist missing))
+    end
+  end
 end
