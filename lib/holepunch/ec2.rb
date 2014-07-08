@@ -43,12 +43,6 @@ module HolePunch
     end
 
     def apply(definition)
-      if definition.env.nil?
-        Logger.log("Creating security groups in '#{@region.name}' region")
-      else
-        Logger.log("Creating security groups for '#{definition.env}' environment in '#{@region.name}' region")
-      end
-
       # get the security group data from the AWS servers
       fetch!
 
