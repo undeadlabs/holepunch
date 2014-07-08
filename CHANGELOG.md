@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0
+
+* Enhancements
+  * Added `HolePunch.apply` to apply security groups to EC2.
+  * Added `HolePunch.defined?` to test if a list of security groups are defined in a SecurityGroups file.
+  * Added `HolePunch.select_undefined` to return a list of desired security groups not defined in a SecurityGroups file.
+
 ## 1.1.0
 
 * Enhancements
