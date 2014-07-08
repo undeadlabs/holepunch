@@ -27,24 +27,22 @@ module HolePunch
 
     def initialize(opts = {})
       opts = {
-        access_key_id:     ENV['AWS_ACCESS_KEY_ID'],
-        secret_access_key: ENV['AWS_SECRET_ACCESS_KEY'],
-        region:            ENV['AWS_REGION'],
+        aws_access_key_id:     ENV['AWS_ACCESS_KEY_ID'],
+        aws_secret_access_key: ENV['AWS_SECRET_ACCESS_KEY'],
+        aws_region:            ENV['AWS_REGION'],
       }.merge(opts)
 
-      AWS.config(opts)
+      AWS.config({
+        access_key_id:     opts[:aws_access_key_id],
+        secret_access_key: opts[:aws_secret_access_key],
+        region:            opts[:aws_region],
+      })
 
       @ec2    = AWS::EC2.new
-      @region = @ec2.regions[opts[:region]]
+      @region = @ec2.regions[opts[:aws_region]]
     end
 
     def apply(definition)
-      if definition.env.nil?
-        Logger.log("Creating security groups in '#{@region.name}' region")
-      else
-        Logger.log("Creating security groups for '#{definition.env}' environment in '#{@region.name}' region")
-      end
-
       # get the security group data from the AWS servers
       fetch!
 

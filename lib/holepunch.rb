@@ -47,12 +47,21 @@ module HolePunch
     # @option opts [String] :aws_region             the AWS region
     def apply(filename, env, opts = {})
       definition = Definition.build(filename, env)
-      ec2 = EC2.new({
-        access_key_id:     opts[:aws_access_key_id],
-        secret_access_key: opts[:aws_secret_access_key],
-        region:            opts[:aws_region],
-      })
+      ec2 = EC2.new(opts)
       ec2.apply(definition)
+    end
+
+    # Tests if a list of security groups are all defined in the SecurityGroups
+    # file.
+    #
+    # @param filename [String]        the path to the SecurityGroups file
+    # @param env      [String, nil]   the environment
+    # @param groups   [Array<String>] the list of security groups to check
+    def defined?(filename, env, groups)
+      definition = Definition.build(filename, env)
+      groups.all? do |group_id|
+        definition.groups.include?(group_id)
+      end
     end
 
     # Examines the given SecurityGroups file for the given service and returns
@@ -74,10 +83,12 @@ module HolePunch
     # private helpers
     #
 
+    # @private
     def cidr?(value)
       value.to_s =~ /\d+\.\d+\.\d+\.\d+\/\d+/
     end
 
+    # @private
     def read_file(file)
       content = File.open(file, 'rb') do |io|
         io.read
