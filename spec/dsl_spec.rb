@@ -105,7 +105,7 @@ describe ::HolePunch::DSL do
       group = dsl.groups['holepunch']
       expect(group.ingresses.count).to eq(1)
       expect(group.ingresses.first.type).to eq(:icmp)
-      expect(group.ingresses.first.ports).to be_nil
+      expect(group.ingresses.first.ports).to eq(0)
       expect(group.ingresses.first.sources).to eq(['0.0.0.0/0'])
     end
 
@@ -119,7 +119,7 @@ describe ::HolePunch::DSL do
       group = dsl.groups['holepunch']
       expect(group.ingresses.count).to eq(1)
       expect(group.ingresses.first.type).to eq(:icmp)
-      expect(group.ingresses.first.ports).to be_nil
+      expect(group.ingresses.first.ports).to eq(0)
       expect(group.ingresses.first.sources).to eq(['0.0.0.0/0'])
     end
 
@@ -161,7 +161,7 @@ describe ::HolePunch::DSL do
       group = dsl.groups['holepunch']
       expect(group.ingresses.count).to eq(1)
       expect(group.ingresses.first.type).to eq(:icmp)
-      expect(group.ingresses.first.ports).to be_nil
+      expect(group.ingresses.first.ports).to eq(0)
       expect(group.ingresses.first.sources).to eq(['1.2.3.4/32', '10.0.0.0/16'])
     end
 
@@ -203,7 +203,7 @@ describe ::HolePunch::DSL do
       group = dsl.groups['holepunch']
       expect(group.ingresses.count).to eq(1)
       expect(group.ingresses.first.type).to eq(:icmp)
-      expect(group.ingresses.first.ports).to be_nil
+      expect(group.ingresses.first.ports).to eq(0)
       expect(group.ingresses.first.sources).to eq(['1.2.3.4/32', '10.0.0.0/16'])
     end
 

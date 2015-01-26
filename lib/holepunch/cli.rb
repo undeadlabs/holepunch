@@ -30,17 +30,19 @@ module HolePunch
 
     default_task :apply
 
-    option :'aws-access-key',         aliases: :A, type: :string, default: ENV['AWS_ACCESS_KEY_ID'], desc:
+    option :'aws-access-key',         aliases: :A,    type: :string, default: ENV['AWS_ACCESS_KEY_ID'], desc:
       'Your AWS Access Key ID'
-    option :'aws-secret-access-key',  aliases: :k, type: :string, default: ENV['AWS_SECRET_ACCESS_KEY'], desc:
+    option :'aws-secret-access-key',  aliases: :k,    type: :string, default: ENV['AWS_SECRET_ACCESS_KEY'], desc:
       'Your AWS API Secret Access Key'
-    option :'aws-region',             aliases: :r, type: :string, default: ENV['AWS_REGION'], desc:
+    option :'aws-region',             aliases: :r,    type: :string, default: ENV['AWS_REGION'], desc:
       'Your AWS region'
-    option :env,                      aliases: :e, type: :string, desc:
+    option :'aws-vpc-id',             aliases: :c,    type: :string, desc:
+      'Set the VPC ID (for VPC security groups)'
+    option :env,                      aliases: :e,    type: :string, desc:
       'Set the environment'
-    option :file,                     aliases: :f, type: :string, default: "#{Dir.pwd}/SecurityGroups", desc:
+    option :file,                     aliases: :f,    type: :string, default: "#{Dir.pwd}/SecurityGroups", desc:
       'The location of the SecurityGroups file to use'
-    option :verbose,                  aliases: :v, type: :boolean, desc:
+    option :verbose,                  aliases: :v,    type: :boolean, desc:
       'Enable verbose output'
     desc 'apply [OPTIONS]', 'apply the defined security groups to ec2'
     def apply
@@ -53,6 +55,7 @@ module HolePunch
         aws_access_key_id:     options[:'aws-access-key'],
         aws_secret_access_key: options[:'aws-secret-access-key'],
         aws_region:            options[:'aws-region'],
+        aws_vpc_id:            options[:'aws-vpc-id'],
       })
     rescue EnvNotDefinedError => e
       Logger.fatal('You have security groups that use an environment, but you did not specify one. See --help')
@@ -72,7 +75,7 @@ module HolePunch
     def service(name = nil)
       Logger.verbose = options[:verbose]
 
-      definition = Definition.build(options[:file], options[:env])
+      definition = DSL.evaluate(options[:file], options[:env])
 
       if options[:list]
         definition.services.keys.sort.each do |name|

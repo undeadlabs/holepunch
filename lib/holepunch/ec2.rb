@@ -40,6 +40,7 @@ module HolePunch
 
       @ec2    = AWS::EC2.new
       @region = @ec2.regions[opts[:aws_region]]
+      @vpc_id = opts[:aws_vpc_id]
     end
 
     def apply(definition)
@@ -59,7 +60,7 @@ module HolePunch
         ec2_group = find(id)
         if ec2_group.nil?
           Logger.log(:create, id)
-          ec2_group = create(id, group.desc)
+          ec2_group = create(id, group.desc, @vpc_id)
         end
         ec2_groups[id] = ec2_group
       end
@@ -82,7 +83,7 @@ module HolePunch
             end
           end
           unless revoke_sources.empty?
-            Logger.log("revoke #{ec2_perm.protocol}", "#{id} #{sources_list_to_s(revoke_sources)}")
+            Logger.log("revoke #{ec2_perm.protocol}", "#{id} #{sources_list_to_s(revoke_sources)} #{ec2_perm.port_range}")
             ec2_group.revoke_ingress(ec2_perm.protocol, ec2_perm.port_range, *revoke_sources)
           end
         end
@@ -106,7 +107,7 @@ module HolePunch
             end
           end
           unless new_sources.empty?
-            Logger.log(perm.type, "#{id} #{sources_list_to_s(new_sources)}")
+            Logger.log(perm.type, "#{id} #{sources_list_to_s(new_sources)} #{perm.ports}")
             ec2_group.authorize_ingress(perm.type, perm.ports, *new_sources)
           end
         end
@@ -116,11 +117,13 @@ module HolePunch
 
     private
       def fetch!
-        @groups = @region.security_groups.to_a
+        @groups = @region.security_groups.to_a.keep_if do |region|
+          !@vpc_id == !region.vpc_id
+        end
       end
 
-      def create(name, description)
-        group = @region.security_groups.create(name, description: description)
+      def create(name, description, vpc)
+        group = @region.security_groups.create(name, description: description, vpc: vpc)
         @groups << group
         group
       end
