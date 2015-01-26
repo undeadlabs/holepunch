@@ -61,7 +61,8 @@ module HolePunch
       new(env, *args).eval_dsl(&block)
     end
 
-    def initialize(env, id)
+    def initialize(env, id, vpc_id)
+      @vpc_id = vpc_id
       super(env, SecurityGroup.new(id, dependency: false))
     end
 
@@ -70,28 +71,49 @@ module HolePunch
     end
 
     def icmp(*sources)
-      sources << '0.0.0.0/0' if sources.empty?
-      @model.ingresses << Permission.new(:icmp, nil, sources.flatten)
+      @model.ingresses << Permission.new(:icmp, nil, valid_sources(sources))
     end
     alias_method :ping, :icmp
 
     def tcp(ports, *sources)
-      sources << '0.0.0.0/0' if sources.empty?
-      @model.ingresses << Permission.new(:tcp, ports, sources.flatten)
+      @model.ingresses << Permission.new(:tcp, ports, valid_sources(sources))
     end
 
     def udp(ports, *sources)
+      @model.ingresses << Permission.new(:udp, ports, valid_sources(sources))
+    end
+
+    private
+
+    def valid_sources (sources)
+      sources = sources.flatten.select do |source|
+        if HolePunch.cidr?(source)
+          true
+        elsif ! @vpc_id
+          true
+        elsif /vpc/.match(source)
+          true
+        else
+          false
+        end
+      end
       sources << '0.0.0.0/0' if sources.empty?
-      @model.ingresses << Permission.new(:udp, ports, sources.flatten)
+      sources
     end
   end
 
   class DSL < BaseDSL
-    def self.evaluate(filename, env)
-      DSL.new(env).eval_dsl(filename)
+    def self.evaluate(filename, env, vpc_id = nil)
+      path = Pathname.new(filename).expand_path
+      unless path.file?
+        raise SecurityGroupsFileNotFoundError, "#{filename} not found"
+      end
+
+      DSL.new(env, vpc_id).eval_dsl(filename)
     end
 
-    def initialize(env)
+    def initialize(env, vpc_id)
+      @vpc_id = vpc_id
       super(env, Definition.new(env))
     end
 
@@ -107,13 +129,16 @@ module HolePunch
       id = id.to_s
       raise GroupError, "duplicate group id #{id}" if @model.groups.include?(id)
       raise HolePunchSyntaxError, "dependency group #{id} cannot have a block" if block_given?
+      return if @vpc_id && ! /vpc/.match(id)
       @model.add_group(SecurityGroup.new(id, dependency: true))
     end
 
     def group(id, &block)
       id = id.to_s
       raise GroupError, "duplicate group id #{id}" if @model.groups.include?(id)
-      @model.add_group(GroupDSL.evaluate(@env, id, &block))
+      group = GroupDSL.evaluate(@env, id, @vpc_id, &block)
+      return if @vpc_id && ! /vpc/.match(id)
+      @model.add_group(group)
     end
 
     def service(id, &block)

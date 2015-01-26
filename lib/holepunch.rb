@@ -46,7 +46,7 @@ module HolePunch
     # @option opts [String] :aws_secret_access_key  the AWS secret access key
     # @option opts [String] :aws_region             the AWS region
     def apply(filename, env, opts = {})
-      definition = Definition.build(filename, env)
+      definition = DSL.evaluate(filename, env, opts[:aws_vpc_id])
       ec2 = EC2.new(opts)
       ec2.apply(definition)
     end

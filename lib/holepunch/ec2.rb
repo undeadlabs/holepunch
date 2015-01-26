@@ -40,6 +40,7 @@ module HolePunch
 
       @ec2    = AWS::EC2.new
       @region = @ec2.regions[opts[:aws_region]]
+      @vpc_id = opts[:aws_vpc_id]
     end
 
     def apply(definition)
@@ -59,7 +60,10 @@ module HolePunch
         ec2_group = find(id)
         if ec2_group.nil?
           Logger.log(:create, id)
-          ec2_group = create(id, group.desc)
+          ec2_group = create(id, group.desc, @vpc_id)
+        end
+        if @vpc_id && ec2_group.vpc_id.nil?
+          raise "EC2 group #{id} was not created as a VPC group"
         end
         ec2_groups[id] = ec2_group
       end
@@ -119,8 +123,8 @@ module HolePunch
         @groups = @region.security_groups.to_a
       end
 
-      def create(name, description)
-        group = @region.security_groups.create(name, description: description)
+      def create(name, description, vpc)
+        group = @region.security_groups.create(name, description: description, vpc: vpc)
         @groups << group
         group
       end
