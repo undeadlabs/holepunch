@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.0
+
+* Enhancements
+  * Add support for AWS VPC
+
 ## 1.2.0
 
 * Enhancements
