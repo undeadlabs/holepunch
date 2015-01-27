@@ -71,7 +71,7 @@ module HolePunch
 
     def icmp(*sources)
       sources << '0.0.0.0/0' if sources.empty?
-      @model.ingresses << Permission.new(:icmp, nil, sources.flatten)
+      @model.ingresses << Permission.new(:icmp, 0, sources.flatten)
     end
     alias_method :ping, :icmp
 
@@ -88,6 +88,11 @@ module HolePunch
 
   class DSL < BaseDSL
     def self.evaluate(filename, env)
+      path = Pathname.new(filename).expand_path
+      unless path.file?
+        raise SecurityGroupsFileNotFoundError, "#{filename} not found"
+      end
+
       DSL.new(env).eval_dsl(filename)
     end
 

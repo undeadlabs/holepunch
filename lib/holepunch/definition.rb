@@ -70,18 +70,7 @@ module HolePunch
     attr_reader :groups
     attr_reader :services
 
-    class << self
-      def build(file, env)
-        filename = Pathname.new(file).expand_path
-        unless filename.file?
-          raise SecurityGroupsFileNotFoundError, "#{filename} not found"
-        end
-
-        DSL.evaluate(file, env)
-      end
-    end
-
-    def initialize(env = nil)
+    def initialize(env)
       @env = env
       @groups = {}
       @services = {}
