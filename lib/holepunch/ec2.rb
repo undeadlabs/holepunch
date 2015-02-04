@@ -117,8 +117,8 @@ module HolePunch
 
     private
       def fetch!
-        @groups = @region.security_groups.to_a.keep_if do |region|
-          !@vpc_id == !region.vpc_id
+        @groups = @region.security_groups.to_a.keep_if do |group|
+          !@vpc_id == !group.vpc_id
         end
       end
 
